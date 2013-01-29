@@ -229,20 +229,17 @@ $.extend(Sudoku.Cell.prototype, {
 	 * Otherwise, if multiple possibilities remain, return undefined.
 	 */
 	solePossibleNumber: function() {
-		var num, possibility = undefined;
+        var num;
+        if (this.possibleNumbers.countSet() > 1) {
+                return undefined; // Multiple possibilities
+        }
 		// FIXME: Inefficient. A digit string would be better.
 		for (num = this.possibleNumbers.base(); num < this.possibleNumbers.base() + this.possibleNumbers.size(); num++) {
 			if (this.isNumberPossible(num)) {
-				if (possibility) {
-					return undefined; // Multiple possibilities
-				}
-				possibility = num;
+				return num; // Sole possibility
 			}
 		}
-		if (!possibility) {
-			throw "No possible number for " + this;
-		}
-		return possibility;
+		throw "No possible number for " + this;
 	},
 	/**
 	 * Return true if this Cell is a Given,
@@ -257,13 +254,6 @@ $.extend(Sudoku.Cell.prototype, {
 	 */
 	isDeduced: function() {
 		return this.deduced;
-	},
-	/**
-	 * Return a truthy value if this Cell's number is currently known
-	 * (by any means), or a falsy value if it is currently unknown.
-	 */
-	isKnown: function() {
-		return this.given || this.deduced || (this.solePossibleNumber() !== undefined);
 	},
 	updateView: function() {
 		if (this.given) {

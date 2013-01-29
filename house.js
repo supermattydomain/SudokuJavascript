@@ -55,16 +55,7 @@ $.extend(Sudoku.House.prototype, {
 		return this;
 	},
 	enumUnknownNumbers: function(callback) {
-		var num;
-		for (num = 1; num <= 9; num++) {
-			if (this.isNumberKnown(num)) {
-				continue; // Skip known number
-			}
-			if (!callback(num)) {
-				return false; // Halt enumeration
-			}
-		}
-		return true;
+		return this.knownNumbers.enumClear(callback);
 	},
 	getNumberString: function() {
 		var ret = '';

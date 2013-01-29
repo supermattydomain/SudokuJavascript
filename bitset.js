@@ -197,7 +197,7 @@ $.extend(BitSet.prototype, {
 	enumClear: function(callback) {
 		var num;
 		for (num = this._base; num < this._base + this._size; num++) {
-			if (this.isSet(num)) {
+			if (this.isClear(num)) {
 				if (!callback(num)) {
 					return false;
 				}
