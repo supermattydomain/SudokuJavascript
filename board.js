@@ -9,6 +9,9 @@ $.extend(Sudoku, {
 	 */
 	Board: function(table) {
 		this.table = table;
+		this.rows = [];
+		this.cols = [];
+		this.boxes = [];
 		this.populate();
 		this.addBorders();
 	}
@@ -30,19 +33,31 @@ $.extend(Sudoku.Board.prototype, {
 			tbody.append(tableRow);
 		}
 		this.table.append(tbody);
+		for (r = 0; r < this.table[0].rows.length; r++) {
+			this.rows[r] = new Sudoku.House(this, r, r, 0, this.table[0].rows[r].cells.length - 1);
+		}
+		for (c = 0; c < this.table[0].rows[0].cells.length; c++) {
+			this.cols[c] = new Sudoku.House(this, 0, this.table[0].rows.length - 1, c, c);
+		}
+		for (r = 0; r < 3; r++) {
+			this.boxes[r] = [];
+			for (c = 0; c < 3; c++) {
+				this.boxes[r][c] = new Sudoku.House(this, r * 3, r * 3 + 2, c * 3, c * 3 + 2);
+			}
+		}
 		return this;
 	},
 	cellAt: function(r, c) {
 		return this.cells[r][c];
 	},
 	getRow: function(r) {
-		return new Sudoku.House(this, r, r, 0, this.table[0].rows[r].cells.length - 1);
+		return this.rows[r];
 	},
-	getCol: function(c) {
-		return new Sudoku.House(this, 0, this.table[0].rows.length - 1, c, c);
+	getColumn: function(c) {
+		return this.cols[c];
 	},
 	getBox: function(r, c) {
-		return new Sudoku.House(this, r * 3, r * 3 + 2, c * 3, c * 3 + 2);
+		return this.boxes[r][c];
 	},
 	enumRows: function(callback) {
 		var r;
@@ -56,7 +71,7 @@ $.extend(Sudoku.Board.prototype, {
 	enumColumns: function(callback) {
 		var c;
 		for (c = 0; c < this.table[0].rows[0].cells.length; c++) {
-			if (!callback(this.getCol(c))) {
+			if (!callback(this.getColumn(c))) {
 				return false; // Halt enumeration
 			}
 		}
@@ -92,6 +107,18 @@ $.extend(Sudoku.Board.prototype, {
 	reset: function() {
 		this.enumCells(function(cell) {
 			cell.reset();
+			return true;
+		});
+		this.enumRows(function(row) {
+			row.reset();
+			return true;
+		});
+		this.enumColumns(function(col) {
+			col.reset();
+			return true;
+		});
+		this.enumBoxes(function(box) {
+			box.reset();
 			return true;
 		});
 		return this;

@@ -16,10 +16,15 @@ $.extend(Sudoku, {
 		this.rowEnd = rowEnd;
 		this.colStart = colStart;
 		this.colEnd = colEnd;
+		this.knownNumbers = new BitSet(9, 1);
+		this.reset();
 	}
 });
 
 $.extend(Sudoku.House.prototype, {
+	reset: function() {
+		this.knownNumbers.clearAll();
+	},
 	/**
 	 * Enumerate the 9 Cells in this House in row first then column order.
 	 * @return {Boolean} true iff enumeration completed, false iff terminated prematurely.
@@ -43,12 +48,11 @@ $.extend(Sudoku.House.prototype, {
 	 * @returns {Boolean} whether the number was found
 	 */
 	isNumberKnown: function(num) {
-		return !this.enumCells(function(cell) {
-			if (num === cell.solePossibleNumber()) {
-				return false; // Halt enumeration
-			}
-			return true;
-		});
+		return this.knownNumbers.isSet(num);
+	},
+	setNumberKnown: function(num) {
+		this.knownNumbers.set(num);
+		return this;
 	},
 	enumUnknownNumbers: function(callback) {
 		var num;

@@ -36,11 +36,9 @@ $.extend(Sudoku.Cell.prototype, {
 	 * Enumerate the 20 distinct Peers of this Cell.
 	 */
 	enumPeers: function(callback) {
-		var cell = this, ret,
-			boxTop  = 3 * Math.floor(this.row / 3),
-			boxLeft = 3 * Math.floor(this.col / 3);
+		var cell = this, ret, box = this.getBox();
 		// Cells in the same Box other than the Cell itself
-		ret = this.board.getBox(boxTop / 3, boxLeft / 3).enumCells(function(peer) {
+		ret = box.enumCells(function(peer) {
 			if (peer.row === cell.row && peer.col === cell.col) {
 				return true; // Skip self
 			}
@@ -48,21 +46,75 @@ $.extend(Sudoku.Cell.prototype, {
 		});
 		if (ret) {
 			// Cells in the same column above the same Box
-			ret = (new Sudoku.House(this.board, 0, boxTop - 1, this.col, this.col)).enumCells(callback);
+			ret = (new Sudoku.House(
+				this.board,
+				0,
+				box.rowStart - 1,
+				this.col,
+				this.col)
+			).enumCells(callback);
 		}
 		if (ret) {
 			// Cells in the same column below the same Box
-			ret = (new Sudoku.House(this.board, boxTop + 3, 8, this.col, this.col)).enumCells(callback);
+			ret = (new Sudoku.House(
+				this.board,
+				box.rowEnd + 1,
+				8,
+				this.col,
+				this.col)
+			).enumCells(callback);
 		}
 		if (ret) {
 			// Cells in the same row left of the same Box
-			ret = (new Sudoku.House(this.board, this.row, this.row, 0, boxLeft - 1)).enumCells(callback);
+			ret = (new Sudoku.House(
+				this.board,
+				this.row,
+				this.row,
+				0,
+				box.colStart - 1)
+			).enumCells(callback);
 		}
 		if (ret) {
 			// Cells in the same row right of the same Box
-			ret = (new Sudoku.House(this.board, this.row, this.row, boxLeft + 3, 8)).enumCells(callback);
+			ret = (new Sudoku.House(
+				this.board,
+				this.row,
+				this.row,
+				box.colEnd + 1,
+				8)
+			).enumCells(callback);
 		}
 		return ret;
+	},
+	/**
+	 * Return the Row that contains this Cell.
+	 */
+	getRow: function() {
+		return this.board.getRow(this.row);
+	},
+	/**
+	 * Return the Column that contains this Cell.
+	 */
+	getColumn: function() {
+		return this.board.getColumn(this.col);
+	},
+	/**
+	 * Return the Box that contains this Cell.
+	 */
+	getBox: function() {
+		return this.board.getBox(Math.floor(this.row / 3), Math.floor(this.col / 3));
+	},
+	/**
+	 * Enumerate the three Houses that contain this Cell.
+	 */
+	enumHouses: function(callback) {
+		if (!callback(this.getRow())) {
+			return;
+		}
+		if (!callback(this.getColumn())) {
+			return;
+		}
+		callback(this.getBox());
 	},
 	/**
 	 * Return true if this Cell could contain the given number,
@@ -140,6 +192,10 @@ $.extend(Sudoku.Cell.prototype, {
 			peer.setNumberImpossible(num);
 			return true;
 		});
+		this.enumHouses(function(house) {
+			house.setNumberKnown(num);
+			return true;
+		});
 		return true;
 	},
 	setNumberString: function(str) {
@@ -212,12 +268,17 @@ $.extend(Sudoku.Cell.prototype, {
 	updateView: function() {
 		if (this.given) {
 			this.cell.addClass('given');
+			this.cell.removeAttr('title');
 		} else {
 			this.cell.removeClass('given');
+			if (this.possibleNumbers.countSet() > 1) {
+				// Put possible numbers in title attribute,
+				// for jQuery UI Tooltip to show them on hover
+				this.cell.attr('title', '' + this.possibleNumbers);
+			} else {
+				this.cell.removeAttr('title');
+			}
 		}
-		// Put possible numbers in title attribute,
-		// for jQuery UI Tooltip to show them on hover
-		this.cell.attr('title', '' + this.possibleNumbers);
 		return this;
 	},
 	toString: function() {
