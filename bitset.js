@@ -42,12 +42,18 @@ $.extend(BitSet.prototype, {
 		bitNum -= this._base;
 		return 0 !== (this.bits & (1 << bitNum));
 	},
+	isClear: function(bitNum) {
+		return !this.isSet(bitNum);
+	},
 	/**
 	 * Test whether any bit is set.
 	 * @returns {Boolean} True if any bit is set, false if no bits set
 	 */
 	isAnySet: function() {
 		return 0 !== this.bits;
+	},
+	isAnyClear: function() {
+		return ((1 << this._size) - 1) !== this.bits;
 	},
 	/**
 	 * Set one bit, identified by its zero-based index.
@@ -85,6 +91,14 @@ $.extend(BitSet.prototype, {
 	 */
 	clearAll: function() {
 		this.bits = 0;
+		return this;
+	},
+	setAllBut: function(bitNum) {
+		if (bitNum < this._base || bitNum >= this._base + this._size) {
+			throw "Bit index " + bitNum + " is out of permitted range " + this._base + ".." + (this._base + this._size - 1);
+		}
+		bitNum -= this._base;
+		this.bits = (((1 << this._size) - 1) & ~(1 << bitNum));
 		return this;
 	},
 	/**
