@@ -34,15 +34,18 @@ $.extend(BitSet.prototype, {
 	countSet: function() {
 		return this.card;
 	},
+	validateBitIndex: function(bitNum) {
+		if (bitNum < this._base || bitNum >= this._base + this._size) {
+			throw "Bit index " + bitNum + " is out of permitted range " + this._base + ".." + (this._base + this._size - 1);
+		}
+	},
 	/**
 	 * Test whether the given-index bit is set.
 	 * @param bitNum zero-based index of the bit to test
 	 * @returns {Boolean} True if the given bit is set
 	 */
 	isSet: function(bitNum) {
-		if (bitNum < this._base || bitNum >= this._base + this._size) {
-			throw "Bit index " + bitNum + " is out of permitted range " + this._base + ".." + (this._base + this._size - 1);
-		}
+		this.validateBitIndex(bitNum);
 		bitNum -= this._base;
 		return 0 !== (this.bits & (1 << bitNum));
 	},
@@ -64,9 +67,7 @@ $.extend(BitSet.prototype, {
 	 * @param bitNum the index of the bit to be set
 	 */
 	set: function(bitNum) {
-		if (bitNum < this._base || bitNum >= this._base + this._size) {
-			throw "Bit index " + bitNum + " is out of permitted range " + this._base + ".." + (this._base + this._size - 1);
-		}
+		this.validateBitIndex(bitNum);
 		if (this.isClear(bitNum)) {
 			this.card++;
 		}
@@ -87,9 +88,7 @@ $.extend(BitSet.prototype, {
 	 * @param bitNum the index of the bit to be cleared
 	 */
 	clear: function(bitNum) {
-		if (bitNum < this._base || bitNum >= this._base + this._size) {
-			throw "Bit index " + bitNum + " is out of permitted range " + this._base + ".." + (this._base + this._size - 1);
-		}
+		this.validateBitIndex(bitNum);
 		if (this.isSet(bitNum)) {
 			this.card--;
 		}
@@ -106,9 +105,7 @@ $.extend(BitSet.prototype, {
 		return this;
 	},
 	setAllBut: function(bitNum) {
-		if (bitNum < this._base || bitNum >= this._base + this._size) {
-			throw "Bit index " + bitNum + " is out of permitted range " + this._base + ".." + (this._base + this._size - 1);
-		}
+		this.validateBitIndex(bitNum);
 		bitNum -= this._base;
 		this.bits = (((1 << this._size) - 1) & ~(1 << bitNum));
 		this.card = this._size - 1;
@@ -120,9 +117,7 @@ $.extend(BitSet.prototype, {
 	 * @param bitNum the index of the sole bit to be set
 	 */
 	clearAllBut: function(bitNum) {
-		if (bitNum < this._base || bitNum >= this._base + this._size) {
-			throw "Bit index " + bitNum + " is out of permitted range " + this._base + ".." + (this._base + this._size - 1);
-		}
+		this.validateBitIndex(bitNum);
 		bitNum -= this._base;
 		this.bits = (1 << bitNum);
 		this.card = 1;
@@ -188,22 +183,53 @@ $.extend(BitSet.prototype, {
 		this.card = this._cardinality();
 		return this;
 	},
-	toString: function(base) {
-		var ret = '', num;
-		for (num = 0; num < this._size; num++) {
-			if ((this.bits & (1 << num)) !== 0) {
-				if (ret) {
-					ret = ret + ', ';
+	enumSet: function(callback) {
+		var num;
+		for (num = this._base; num < this._base + this._size; num++) {
+			if (this.isSet(num)) {
+				if (!callback(num)) {
+					return false;
 				}
-				ret += (num + this._base);
 			}
 		}
+		return true;
+	},
+	enumClear: function(callback) {
+		var num;
+		for (num = this._base; num < this._base + this._size; num++) {
+			if (this.isSet(num)) {
+				if (!callback(num)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	},
+	enumBits: function(callback) {
+		var num;
+		for (num = this._base; num < this._base + this._size; num++) {
+			if (!callback(num)) {
+				return false;
+			}
+		}
+		return true;
+	},
+	toString: function(base) {
+		var ret = '';
+		this.enumSet(function(num) {
+			if (ret) {
+				ret += ', ';
+			}
+			ret += '' + num;
+			return true;
+		});
 		return '{' + ret + '}';
 	},
 	toBinaryString: function() {
-		var ret = '', num;
-		for (num = 0; num < this._size; num++) {
-			ret += ((this.bits & (1 << num)) ? '0' : '1');
-		}
+		var ret = '';
+		this.enumBits(function(num, val) {
+			ret += '' + (val ? '1' : '0');
+			return true;
+		});
 	}
 });
