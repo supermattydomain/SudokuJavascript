@@ -128,6 +128,7 @@ $.extend(Cell.prototype, {
 		this.possibleNumbers.setAll();
 		this.cell.text('');
 		this.updateView();
+		return this;
 	},
 	/**
 	 * Enumerate the 20 distinct Peers of this Cell.
@@ -829,22 +830,28 @@ $.extend(Board.prototype, {
 $(function() {
 	(function($) {
 		var stringEdit = $('#numberString'),
-			board = new Board($('.sudokuBoard'));
-		// When the set-number-string button is clicked, update the board.
+			board = new Board($('.sudokuBoard')),
+			puzzleSelect = $('#puzzleSelect'),
+			puzzleInfo = $('#puzzleInfo');
+		// When the set-number-string button is clicked, update the board and game selector and info.
 		$('#setNumberStringButton').on("click", function() {
+			puzzleSelect.val(0);
+			puzzleInfo.text('');
 			board.setNumberString(stringEdit.val());
 		});
 		// When the solve button is clicked, solve the puzzle.
 		$('#solveButton').on("click", function() {
 			board.solve();
 		});
-		// When the reset button is clicked, reset the puzzle
+		// When the reset button is clicked, reset the puzzle and update the number string and game selector and info.
 		$('#resetButton').on("click", function() {
+			puzzleSelect.val(0);
+			puzzleInfo.text('');
 			board.reset();
+			stringEdit.val(board.getNumberString(false));
 		});
 		// Populate puzzle selector from included set of puzzles
 		$(puzzles).each(function(index, puzzle) {
-			var puzzleSelect = $('#puzzleSelect');
 			puzzleSelect.append(
 				$('<option></option>').attr({label: puzzle.name}).text(puzzle.name).val(index)
 			).on("change", function(event) {
@@ -854,7 +861,7 @@ $(function() {
 				}
 				puzzle = puzzles[selectedIndex];
 				board.setNumberString(puzzle.puzzleText);
-				$('#puzzleInfo').text($.grep([ puzzle.author, puzzle.date ], function(val, index) {
+				puzzleInfo.text($.grep([ puzzle.author, puzzle.date ], function(val, index) {
 					return !!val;
 				}).join(", "));
 				stringEdit.val(board.getNumberString(false));
@@ -863,7 +870,7 @@ $(function() {
 		// Enable tooltips on Cells
 		$(document).tooltip({items: '.sudokuCell', track: false});
 		// TODO: For debugging
-		$('#puzzleSelect').val(4).change();
+		puzzleSelect.val(4).change();
 		board.solve();
 	})(jQuery);
 });
