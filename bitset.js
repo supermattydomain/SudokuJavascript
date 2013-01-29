@@ -13,15 +13,10 @@ function BitSet(size, base) {
 	this._size = size;
 	this._base = base || 0;
 	this.bits = 0;
+	this.card = 0;
 }
 $.extend(BitSet.prototype, {
-	size: function() {
-		return this._size;
-	},
-	base: function() {
-		return this._base;
-	},
-	countSet: function() {
+	_cardinality: function() {
 		var bitNum, count = 0;
 		for (bitNum = 0; bitNum < this._size; bitNum++) {
 			if (this.bits & (1 << bitNum)) {
@@ -29,6 +24,15 @@ $.extend(BitSet.prototype, {
 			}
 		}
 		return count;
+	},
+	size: function() {
+		return this._size;
+	},
+	base: function() {
+		return this._base;
+	},
+	countSet: function() {
+		return this.card;
 	},
 	/**
 	 * Test whether the given-index bit is set.
@@ -63,6 +67,9 @@ $.extend(BitSet.prototype, {
 		if (bitNum < this._base || bitNum >= this._base + this._size) {
 			throw "Bit index " + bitNum + " is out of permitted range " + this._base + ".." + (this._base + this._size - 1);
 		}
+		if (this.isClear(bitNum)) {
+			this.card++;
+		}
 		bitNum -= this._base;
 		this.bits |= (1 << bitNum);
 		return this;
@@ -72,6 +79,7 @@ $.extend(BitSet.prototype, {
 	 */
 	setAll: function() {
 		this.bits = (1 << this._size) - 1;
+		this.card = this._size;
 		return this;
 	},
 	/**
@@ -82,6 +90,9 @@ $.extend(BitSet.prototype, {
 		if (bitNum < this._base || bitNum >= this._base + this._size) {
 			throw "Bit index " + bitNum + " is out of permitted range " + this._base + ".." + (this._base + this._size - 1);
 		}
+		if (this.isSet(bitNum)) {
+			this.card--;
+		}
 		bitNum -= this._base;
 		this.bits &= ~(1 << bitNum);
 		return this;
@@ -91,6 +102,7 @@ $.extend(BitSet.prototype, {
 	 */
 	clearAll: function() {
 		this.bits = 0;
+		this.card = 0;
 		return this;
 	},
 	setAllBut: function(bitNum) {
@@ -99,6 +111,7 @@ $.extend(BitSet.prototype, {
 		}
 		bitNum -= this._base;
 		this.bits = (((1 << this._size) - 1) & ~(1 << bitNum));
+		this.card = this._size - 1;
 		return this;
 	},
 	/**
@@ -112,6 +125,7 @@ $.extend(BitSet.prototype, {
 		}
 		bitNum -= this._base;
 		this.bits = (1 << bitNum);
+		this.card = 1;
 		return this;
 	},
 	and: function(bs) {
@@ -122,6 +136,7 @@ $.extend(BitSet.prototype, {
 			throw "Bitset bases differ: " + this._base + " and " + bs._base;
 		}
 		this.bits &= bs.bits;
+		this.card = this._cardinality();
 		return this;
 	},
 	or: function(bs) {
@@ -132,6 +147,7 @@ $.extend(BitSet.prototype, {
 			throw "Bitset bases differ: " + this._base + " and " + bs._base;
 		}
 		this.bits |= bs.bits;
+		this.card = this._cardinality();
 		return this;
 	},
 	xor: function(bs) {
@@ -142,10 +158,12 @@ $.extend(BitSet.prototype, {
 			throw "Bitset bases differ: " + this._base + " and " + bs._base;
 		}
 		this.bits ^= bs.bits;
+		this.card = this._cardinality();
 		return this;
 	},
 	not: function() {
 		this.bits = ~this.bits;
+		this.card = this._size - this.card;
 		return this;
 	},
 	andNot: function(bs) {
@@ -156,6 +174,7 @@ $.extend(BitSet.prototype, {
 			throw "Bitset bases differ: " + this._base + " and " + bs._base;
 		}
 		this.bits &= ~bs.bits;
+		this.card = this._cardinality();
 		return this;
 	},
 	orNot: function(bs) {
@@ -166,6 +185,7 @@ $.extend(BitSet.prototype, {
 			throw "Bitset bases differ: " + this._base + " and " + bs._base;
 		}
 		this.bits |= ~bs.bits;
+		this.card = this._cardinality();
 		return this;
 	},
 	toString: function(base) {
