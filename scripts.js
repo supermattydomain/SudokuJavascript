@@ -28,6 +28,8 @@ $.extend(Sudoku, {
 	colToString: function(colNum) {
 		return '' + (colNum + 1);
 	},
+	givenCharacters: "123456789",
+	nonGivenCharacters: " .0",
 	puzzles: [
       	{
       		name: "Please select..."
@@ -37,17 +39,17 @@ $.extend(Sudoku, {
       		author: undefined,
       		date: undefined,
       		puzzleText: "\
-.6.|7.3|.1. \
-4..|9.1|..3 \
-...|.4.|... \
----+---+--- \
-58.|3.4|.21 \
-..6|.2.|5.. \
-14.|8.6|.79 \
----+---+--- \
-...|.1.|... \
-2..|5.7|..4 \
-.1.|6.8|.3. \
+.6.|7.3|.1.\
+4..|9.1|..3\
+...|.4.|...\
+---+---+---\
+58.|3.4|.21\
+..6|.2.|5..\
+14.|8.6|.79\
+---+---+---\
+...|.1.|...\
+2..|5.7|..4\
+.1.|6.8|.3.\
 "
       	},
       	{
@@ -55,35 +57,35 @@ $.extend(Sudoku, {
       		author: "W. Gould",
       		date: undefined,
       		puzzleText: "\
-...|.5.|... \
-..9|..6|8.. \
-.57|...|24. \
----+---+--- \
-.8.|9.4|... \
-2..|.6.|..3 \
-...|3.8|.1. \
----+---+--- \
-.48|...|35. \
-..1|4..|7.. \
-      ...|.9.|... \
-      "
+...|.5.|...\
+..9|..6|8..\
+.57|...|24.\
+---+---+---\
+.8.|9.4|...\
+2..|.6.|..3\
+...|3.8|.1.\
+---+---+---\
+.48|...|35.\
+..1|4..|7..\
+...|.9.|...\
+"
       	},
       	{
       		name: "AI Escargot",
       		author: "Arto Inkala",
       		date: "2006",
       		puzzleText: "\
-85.|..2|4.. \
-72.|...|..9 \
-..4|...|... \
----+---+--- \
-...|1.7|..2 \
-3.5|...|9.. \
-.4.|...|... \
----+---+--- \
-...|.8.|.7. \
-.17|...|... \
-...|.36|.4. \
+85.|..2|4..\
+72.|...|..9\
+..4|...|...\
+---+---+---\
+...|1.7|..2\
+3.5|...|9..\
+.4.|...|...\
+---+---+---\
+...|.8.|.7.\
+.17|...|...\
+...|.36|.4.\
 "
       	},
       	{
@@ -91,17 +93,17 @@ $.extend(Sudoku, {
       		author: "Arto Inkala",
       		date: "2010",
       		puzzleText: "\
-..5|3..|... \
-8..|...|.2. \
-.7.|.1.|5.. \
----+---+--- \
-4..|..5|3.. \
-.1.|.7.|..6 \
-..3|2..|.8. \
----+---+--- \
-.6.|5..|..9 \
-..4|...|.3. \
-...|..9|7.. \
+..5|3..|...\
+8..|...|.2.\
+.7.|.1.|5..\
+---+---+---\
+4..|..5|3..\
+.1.|.7.|..6\
+..3|2..|.8.\
+---+---+---\
+.6.|5..|..9\
+..4|...|.3.\
+...|..9|7..\
 "
       	}
     ]
@@ -109,6 +111,7 @@ $.extend(Sudoku, {
 
 $(function() {
 	(function($) {
+		testBitSet();
 		var stringEdit = $('#numberString'),
 			board = new Sudoku.Board($('.sudokuBoard')),
 			puzzleSelect = $('#puzzleSelect'),
@@ -140,11 +143,11 @@ $(function() {
 					return; // Ignore first entry "Please select"
 				}
 				puzzle = Sudoku.puzzles[selectedIndex];
-				board.setNumberString(puzzle.puzzleText);
 				puzzleInfo.text($.grep([ puzzle.author, puzzle.date ], function(val, index) {
 					return !!val;
 				}).join(", "));
 				stringEdit.val(board.getNumberString(false));
+				board.setNumberString(puzzle.puzzleText);
 			});
 		});
 		// Enable tooltips on Cells

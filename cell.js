@@ -199,11 +199,11 @@ $.extend(Sudoku.Cell.prototype, {
 		return true;
 	},
 	setNumberString: function(str) {
-		if (".0".indexOf(str) >= 0) {
+		if (Sudoku.nonGivenCharacters.indexOf(str) >= 0) {
 			// An initially-unknown Cell (ie, not a Given)
 			this.given = false;
 			this.updateView();
-		} else if ("123456789".indexOf(str) >= 0) {
+		} else if (Sudoku.givenCharacters.indexOf(str) >= 0) {
 			// A Given
 			this.given = true;
 			this.setNumber(str.charCodeAt(0) - "0".charCodeAt(0));
@@ -222,6 +222,29 @@ $.extend(Sudoku.Cell.prototype, {
 			return this.solePossibleNumber();
 		}
 		return ".";
+	},
+	/**
+	 * How many distinct numbers could this Cell possibly contain?
+	 * @returns This Cell's count of possible numbers
+	 */
+	numPossible: function() {
+		return this.possibleNumbers.countSet();
+	},
+	/**
+	 * Return this Cell's set of possible numbers
+	 * @returns Bitset containing possible numbers for this Cell
+	 */
+	getPossibleNumbers: function() {
+		return this.possibleNumbers;
+	},
+	/**
+	 * Is this Cell the same as the given Cell?
+	 * This tests identity, rather than equality.
+	 * @param otherCell A Cell that may be this Cell or another Cell
+	 * @returns {Boolean} true if the given Cell is this Cell, false otherwise
+	 */
+	equals: function(otherCell) {
+		return this.row === otherCell.row && this.col === otherCell.col;
 	},
 	/**
 	 * If there is a sole remaining possible number for this Cell,

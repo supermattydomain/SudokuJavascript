@@ -18,6 +18,10 @@ $.extend(Sudoku, {
 });
 
 $.extend(Sudoku.Board.prototype, {
+	/**
+	 * Populate the HTML table with the Sudoku Board's Cells.
+	 * @returns this
+	 */
 	populate: function() {
 		var r, c, tbody, tableRow, tableCell;
 		tbody = $('<tbody></tbody>');
@@ -47,18 +51,45 @@ $.extend(Sudoku.Board.prototype, {
 		}
 		return this;
 	},
+	/**
+	 * Return a specified cell given its row and column.
+	 * @param r Zero-based row index of Cell
+	 * @param c Zero-based column index of Cell
+	 * @returns The Cell at the given row and column index.
+	 */
 	cellAt: function(r, c) {
 		return this.cells[r][c];
 	},
+	/**
+	 * Return a specified Row of Cells.
+	 * @param r Zero-based index of Row.
+	 * @returns The specified Row of Cells
+	 */
 	getRow: function(r) {
 		return this.rows[r];
 	},
+	/**
+	 * Return a specified Column of Cells.
+	 * @param c Zero-based index of Column.
+	 * @returns The specified Column of Cells
+	 */
 	getColumn: function(c) {
 		return this.cols[c];
 	},
+	/**
+	 * Return a specified Box of Cells.
+	 * @param r Zero-based index of Box.
+	 * @param c Zero-based index of Box.
+	 * @returns The specified Box of Cells
+	 */
 	getBox: function(r, c) {
 		return this.boxes[r][c];
 	},
+	/**
+	 * Enumerate over Rows of Cells in this Board.
+	 * @param callback Function to be passed each Row
+	 * @returns {Boolean} true if enuneration completed, false if terminated early
+	 */
 	enumRows: function(callback) {
 		var r;
 		for (r = 0; r < this.table[0].rows.length; r++) {
@@ -68,6 +99,11 @@ $.extend(Sudoku.Board.prototype, {
 		}
 		return true;
 	},
+	/**
+	 * Enumerate over Columns of Cells in this Board.
+	 * @param callback Function to be passed each Column
+	 * @returns {Boolean} true if enumeration completed, false if terminated early
+	 */
 	enumColumns: function(callback) {
 		var c;
 		for (c = 0; c < this.table[0].rows[0].cells.length; c++) {
@@ -77,6 +113,11 @@ $.extend(Sudoku.Board.prototype, {
 		}
 		return true;
 	},
+	/**
+	 * Enumerate over Boxes of Cells in this Board.
+	 * @param callback Function to be passed each Box
+	 * @returns {Boolean} true if enumeration completed, false if terminated early
+	 */
 	enumBoxes: function(callback) {
 		var r, c;
 		for (r = 0; r < this.table[0].rows.length / 3; r++) {
@@ -88,6 +129,11 @@ $.extend(Sudoku.Board.prototype, {
 		}
 		return true;
 	},
+	/**
+	 * Enumerate over all Houses of Cells in this Board.
+	 * @param callback Function to be passed each House
+	 * @returns {Boolean} true if enumeration completed, false if terminated early
+	 */
 	enumHouses: function(callback) {
 		var ret;
 		ret = this.enumRows(callback);
@@ -99,30 +145,39 @@ $.extend(Sudoku.Board.prototype, {
 		}
 		return ret;
 	},
+	/**
+	 * Enumerate over Cells in this Board.
+	 * @param callback Function to be passed each Cell
+	 * @returns {Boolean} true if enumeration completed, false if terminated early
+	 */
 	enumCells: function(callback) {
 		return this.enumRows(function(row) {
 			return row.enumCells(callback);
 		});
 	},
+	/**
+	 * Clear the board, so that there are no Givens and
+	 * all numbers are possible in each Cell and House.
+	 * @returns this
+	 */
 	reset: function() {
 		this.enumCells(function(cell) {
 			cell.reset();
 			return true;
 		});
-		this.enumRows(function(row) {
-			row.reset();
-			return true;
-		});
-		this.enumColumns(function(col) {
-			col.reset();
-			return true;
-		});
-		this.enumBoxes(function(box) {
-			box.reset();
+		this.enumHouses(function(house) {
+			house.reset();
 			return true;
 		});
 		return this;
 	},
+	/**
+	 * Generate a string describing the initial state of this Board.
+	 * Givens are represented by the digits of their contained numbers;
+	 * Non-Givens are represented by periods ('.').
+	 * @param formatted If truthy, newlines will be inserted between rows
+	 * @returns {String} A string of digits and periods describing the Board
+	 */
 	getNumberString: function(formatted) {
 		var str = '';
 		this.enumRows(function(row) {
@@ -134,6 +189,13 @@ $.extend(Sudoku.Board.prototype, {
 		});
 		return str;
 	},
+	/**
+	 * Set the state of this Board given a string describing its initial state.
+	 * Givens are represented by the digits of their contained numbers;
+	 * Non-Givens are represented by periods ('.'), spaces (' ') or zeroes ('0').
+	 * @param str String describing initial state of Board
+	 * @returns this
+	 */
 	setNumberString: function(str) {
 		var i = 0, c;
 		this.reset();
@@ -141,15 +203,14 @@ $.extend(Sudoku.Board.prototype, {
 			// Skip unrecognised characters
 			do {
 				c = str.charAt(i++);
-			} while (".0123456789".indexOf(c) < 0);
+			} while (Sudoku.nonGivenCharacters.indexOf(c) < 0 && Sudoku.givenCharacters.indexOf(c) < 0);
 			cell.setNumberString(c).updateView();
 			return true;
 		});
 		return this;
 	},
 	/**
-	 * Add additional CSS styles to cells that are at the edges of boxes or the board,
-	 * or are given.
+	 * Add additional CSS styles to cells that are at the edges of boxes or the board.
 	 */
 	addBorders: function() {
 		var r, c;
@@ -271,7 +332,7 @@ $.extend(Sudoku.Board.prototype, {
 					// All unknowns for this number are within the one Row within this House
 					if (house.isRow()) {
 						// We already know that all of a row's unknowns are contained in that one row
-					} else if (house.isCol()) {
+					} else if (house.isColumn()) {
 						// We have found a hidden single generated by previous elimination(s)
 						for (r in rows) {
 							if (board.cellAt(r, house.colStart).setNumber(num)) {
@@ -302,11 +363,11 @@ $.extend(Sudoku.Board.prototype, {
 							});
 						}
 					} else {
-						throw house + " is neither a Row, Col or Box";
+						throw house + " is neither a Row, Column or Box";
 					}
 				}
 				if (1 === objectCardinality(cols)) {
-					// All unknowns for this number are within the one Col within this House
+					// All unknowns for this number are within the one Column within this House
 					if (house.isRow()) {
 						// We have found a hidden single generated by previous elimination(s)
 						for (c in cols) {
@@ -314,15 +375,15 @@ $.extend(Sudoku.Board.prototype, {
 								didWork = true;
 							}
 						}
-					} else if (house.isCol()) {
+					} else if (house.isColumn()) {
 						// We already know that all of a col's unknowns are contained in that one col
 					} else if (house.isBox()) {
 						// This House is a Box, and all of its candidates
-						// for this number are in the same Col within this Box.
-						// None of the Cells in that Col outside this Box
+						// for this number are in the same Column within this Box.
+						// None of the Cells in that Column outside this Box
 						// can contain that number.
 						for (c in cols) {
-							// Portion of Col above this Box
+							// Portion of Column above this Box
 							(new Sudoku.House(board, 0, house.rowStart - 1, c, c)).enumCells(function(cell) {
 								if (cell.setNumberImpossible(num)) {
 									// console.log("solveLockedCandidates: " + cell + " cannot be a " + num);
@@ -330,7 +391,7 @@ $.extend(Sudoku.Board.prototype, {
 								}
 								return true;
 							});
-							// Portion of Col below this Box
+							// Portion of Column below this Box
 							(new Sudoku.House(board, house.rowStart + 3, 8, c, c)).enumCells(function(cell) {
 								if (cell.setNumberImpossible(num)) {
 									// console.log("solveLockedCandidates: " + cell + " cannot be a " + num);
@@ -340,7 +401,7 @@ $.extend(Sudoku.Board.prototype, {
 							});
 						}
 					} else {
-						throw house + " is neither a Row, Col or Box";
+						throw house + " is neither a Row, Column or Box";
 					}
 				}
 				if (1 === objectCardinality(boxes)) {
@@ -380,7 +441,7 @@ $.extend(Sudoku.Board.prototype, {
 								return true;
 							});
 						}
-					} else if (house.isCol()) {
+					} else if (house.isColumn()) {
 						// This House is a Column, and all of its candidates
 						// for this number are in the same Box within this Column.
 						// None of the Cells in that Box outside this Column
@@ -418,12 +479,65 @@ $.extend(Sudoku.Board.prototype, {
 					} else if (house.isBox()) {
 						// We already know that all of a box's unknowns are contained in that one box
 					} else {
-						throw house + " is neither a Row, Col or Box";
+						throw house + " is neither a Row, Column or Box";
 					}
 				}
 				return true; // Next unknown number
 			});
 			return true; // Next House
+		});
+		return didWork;
+	},
+	/**
+	 * If two Cells in a House have the identical pair of candidate numbers,
+	 * then one of the Cells must be one of the numbers and
+	 * the other Cell must be the other number.
+	 * So no other Cells in that House could be either of the two numbers.
+	 * @returns {Boolean}
+	 */
+	solveNakedPairs: function() {
+		var buddy, didWork = false;
+		board.enumHouses(function(house) {
+			house.enumCells(function(cell) {
+				if (2 !== cell.numPossible()) {
+					return true; // Next Cell in House
+				}
+				// Found a Cell with only two possibilities.
+				// Go looking for a 'buddy' - another Cell with the same possibilities
+				buddy = undefined;
+				house.enumCells(function(maybeBuddy) {
+					if (maybeBuddy.equals(cell)) {
+						return true; // Disregard original Cell
+					}
+					if (2 !== maybeBuddy.numPossible()) {
+						return true; // Disregard Cell not with two possibilities
+					}
+					if (maybeBuddy.getPossibleNumbers().equals(cell.getPossibleNumbers())) {
+						return true; // Disregard Cell with differing two possibilities
+					}
+					// Found another Cell with the same two possibilities
+					buddy = maybeBuddy;
+					return false; // Found potential buddy Cell in House
+				});
+				if (buddy) {
+					// Found a pair of Cells with the same two possibilities.
+					// Eliminate these two possibilities from every other Cell in this House.
+					house.enumCells(function(otherCell) {
+						if (otherCell.equals(cell) || buddy.equals(cell)) {
+							return true; // Disregard original Cell and its buddy
+						}
+						cell.getPossibleNumbers.enumSet(function(num) {
+							if (otherCell.setNumberImpossible(num)) {
+								didWork = true;
+							}
+							return true; // Next possible number
+						});
+						return true; // Next other Cell in this House
+					});
+				}
+				return true; // Next Cell in House
+			});
+			return true; // Next House in Board
 		});
 		return didWork;
 	},
@@ -434,7 +548,7 @@ $.extend(Sudoku.Board.prototype, {
 	 * @returns this
 	 */
 	solve: function() {
-		var i, methods = [ "Singles", "HiddenSingles", "LockedCandidates" ];
+		var i, methods = [ "Singles", "HiddenSingles", "LockedCandidates" ]; // "NakedPairs" 
 		nextPass: for (;;) {
 			for (i = 0; i < methods.length; i++) {
 				// console.log("Solving: " + methods[i]);

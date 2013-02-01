@@ -7,8 +7,8 @@
  * @param base Index of first bit in vector.
  */
 function BitSet(size, base) {
-	if (size > 32) {
-		throw "size of " + size + " too big";
+	if (size <= 0 || size > 32) {
+		throw "size of " + size + " is out of permitted range 1..32";
 	}
 	this._size = size;
 	this._base = base || 0;
@@ -17,27 +17,49 @@ function BitSet(size, base) {
 }
 $.extend(BitSet.prototype, {
 	_cardinality: function() {
-		var bitNum, count = 0;
-		for (bitNum = 0; bitNum < this._size; bitNum++) {
-			if (this.bits & (1 << bitNum)) {
+		var count = 0;
+		this.enumBits(function(index, val) {
+			if (val) {
 				count++;
 			}
-		}
+			return true;
+		});
 		return count;
 	},
-	size: function() {
-		return this._size;
-	},
-	base: function() {
-		return this._base;
-	},
-	countSet: function() {
-		return this.card;
-	},
-	validateBitIndex: function(bitNum) {
+	_validateBitIndex: function(bitNum) {
 		if (bitNum < this._base || bitNum >= this._base + this._size) {
 			throw "Bit index " + bitNum + " is out of permitted range " + this._base + ".." + (this._base + this._size - 1);
 		}
+	},
+	/**
+	 * How many bits does this BitSet store?
+	 * @returns The count of bits in this BitSet
+	 */
+	size: function() {
+		return this._size;
+	},
+	/**
+	 * What is the index of the first bit in this BitSet?
+	 * @returns the index of the first bit in this BitSet
+	 */
+	base: function() {
+		return this._base;
+	},
+	/**
+	 * Is the givn BitSet equal to this BitSet?
+	 * This tests equality, not identity.
+	 * @param otherBitSet The BitSet to be compared to this BitSet
+	 * @returns {Boolean} true if the BitSets are equal, false if they differ
+	 */
+	equals: function(otherBitSet) {
+		return this._base === otherBitSet._base && this._count === otherBitSet._count && this.bits === otherBitSet.bits;
+	},
+	/**
+	 * How many bits are set in this BitSet?
+	 * @returns {Number} count of set bits in this BitSet
+	 */
+	countSet: function() {
+		return this.card;
 	},
 	/**
 	 * Test whether the given-index bit is set.
@@ -45,10 +67,15 @@ $.extend(BitSet.prototype, {
 	 * @returns {Boolean} True if the given bit is set
 	 */
 	isSet: function(bitNum) {
-		this.validateBitIndex(bitNum);
+		this._validateBitIndex(bitNum);
 		bitNum -= this._base;
 		return 0 !== (this.bits & (1 << bitNum));
 	},
+	/**
+	 * Test whether the given-index bit is clear.
+	 * @param bitNum zero-based index of the bit to test
+	 * @returns {Boolean} True if the given bit is clear
+	 */
 	isClear: function(bitNum) {
 		return !this.isSet(bitNum);
 	},
@@ -59,6 +86,10 @@ $.extend(BitSet.prototype, {
 	isAnySet: function() {
 		return 0 !== this.bits;
 	},
+	/**
+	 * Test whether any bit is clear.
+	 * @returns {Boolean} True if any bit is clear, false if no bits clear
+	 */
 	isAnyClear: function() {
 		return ((1 << this._size) - 1) !== this.bits;
 	},
@@ -67,12 +98,25 @@ $.extend(BitSet.prototype, {
 	 * @param bitNum the index of the bit to be set
 	 */
 	set: function(bitNum) {
-		this.validateBitIndex(bitNum);
+		this._validateBitIndex(bitNum);
 		if (this.isClear(bitNum)) {
 			this.card++;
+			bitNum -= this._base;
+			this.bits |= (1 << bitNum);
 		}
-		bitNum -= this._base;
-		this.bits |= (1 << bitNum);
+		return this;
+	},
+	/**
+	 * Clear one bit, identified by its zero-based index.
+	 * @param bitNum the index of the bit to be cleared
+	 */
+	clear: function(bitNum) {
+		this._validateBitIndex(bitNum);
+		if (this.isSet(bitNum)) {
+			this.card--;
+			bitNum -= this._base;
+			this.bits &= ~(1 << bitNum);
+		}
 		return this;
 	},
 	/**
@@ -84,45 +128,39 @@ $.extend(BitSet.prototype, {
 		return this;
 	},
 	/**
-	 * Clear one bit, identified by its zero-based index.
-	 * @param bitNum the index of the bit to be cleared
-	 */
-	clear: function(bitNum) {
-		this.validateBitIndex(bitNum);
-		if (this.isSet(bitNum)) {
-			this.card--;
-		}
-		bitNum -= this._base;
-		this.bits &= ~(1 << bitNum);
-		return this;
-	},
-	/**
 	 * Clear all bits.
 	 */
 	clearAll: function() {
-		this.bits = 0;
-		this.card = 0;
+		this.bits = this.card = 0;
 		return this;
 	},
+	/**
+	 * Set all bits except that with the given index.
+	 * @param bitNum Index of bit to clear
+	 */
 	setAllBut: function(bitNum) {
-		this.validateBitIndex(bitNum);
+		this._validateBitIndex(bitNum);
 		bitNum -= this._base;
 		this.bits = (((1 << this._size) - 1) & ~(1 << bitNum));
 		this.card = this._size - 1;
 		return this;
 	},
 	/**
-	 * Set one bit, identified by its zero-based index,
-	 * and clear all other bits.
-	 * @param bitNum the index of the sole bit to be set
+	 * Clear all bits except that with the given index.
+	 * @param bitNum Index of bit to clear
 	 */
 	clearAllBut: function(bitNum) {
-		this.validateBitIndex(bitNum);
+		this._validateBitIndex(bitNum);
 		bitNum -= this._base;
 		this.bits = (1 << bitNum);
 		this.card = 1;
 		return this;
 	},
+	/**
+	 * Binary AND this bitset with the given bitset.
+	 * Only this bitset is modified.
+	 * @param bs The bitset to be ANDed with this bitset.
+	 */
 	and: function(bs) {
 		if (this._size !== bs._size) {
 			throw "Bitset sizes differ: " + this._size + " and " + bs._size;
@@ -134,6 +172,11 @@ $.extend(BitSet.prototype, {
 		this.card = this._cardinality();
 		return this;
 	},
+	/**
+	 * Binary OR this bitset with the given bitset.
+	 * Only this bitset is modified.
+	 * @param bs The bitset to be ORed with this bitset.
+	 */
 	or: function(bs) {
 		if (this._size !== bs._size) {
 			throw "Bitset sizes differ: " + this._size + " and " + bs._size;
@@ -145,6 +188,11 @@ $.extend(BitSet.prototype, {
 		this.card = this._cardinality();
 		return this;
 	},
+	/**
+	 * Binary XOR this bitset with the given bitset.
+	 * Only this bitset is modified.
+	 * @param bs The bitset to be XORed with this bitset.
+	 */
 	xor: function(bs) {
 		if (this._size !== bs._size) {
 			throw "Bitset sizes differ: " + this._size + " and " + bs._size;
@@ -156,11 +204,19 @@ $.extend(BitSet.prototype, {
 		this.card = this._cardinality();
 		return this;
 	},
+	/**
+	 * Binary NOT this bitset, ie invert all its bits.
+	 */
 	not: function() {
 		this.bits = ~this.bits;
 		this.card = this._size - this.card;
 		return this;
 	},
+	/**
+	 * Binary AND this bitset with the inverse of the given bitset.
+	 * Only this bitset is modified.
+	 * @param bs The bitset whose inverse is to be ANDed with this bitset.
+	 */
 	andNot: function(bs) {
 		if (this._size !== bs._size) {
 			throw "Bitset sizes differ: " + this._size + " and " + bs._size;
@@ -172,6 +228,11 @@ $.extend(BitSet.prototype, {
 		this.card = this._cardinality();
 		return this;
 	},
+	/**
+	 * Binary OR this bitset with the inverse of the given bitset.
+	 * Only this bitset is modified.
+	 * @param bs The bitset whose inverse is to be ORed with this bitset.
+	 */
 	orNot: function(bs) {
 		if (this._size !== bs._size) {
 			throw "Bitset sizes differ: " + this._size + " and " + bs._size;
@@ -183,6 +244,12 @@ $.extend(BitSet.prototype, {
 		this.card = this._cardinality();
 		return this;
 	},
+	/**
+	 * Enumerate set bits in this bitset,
+	 * calling the given callback for each set bit found.
+	 * @param callback Function to be passed indices of set bits.
+	 * @returns {Boolean} true if enumeration completed, false if terminated early
+	 */
 	enumSet: function(callback) {
 		var num;
 		for (num = this._base; num < this._base + this._size; num++) {
@@ -194,6 +261,12 @@ $.extend(BitSet.prototype, {
 		}
 		return true;
 	},
+	/**
+	 * Enumerate clear bits in this bitset,
+	 * calling the given callback for each cleared bit found.
+	 * @param callback Function to be passed indices of clear bits.
+	 * @returns {Boolean} true if enumeration completed, false if terminated early
+	 */
 	enumClear: function(callback) {
 		var num;
 		for (num = this._base; num < this._base + this._size; num++) {
@@ -205,16 +278,25 @@ $.extend(BitSet.prototype, {
 		}
 		return true;
 	},
+	/**
+	 * Enumerate bits in this bitset, calling the given callback for each.
+	 * @param callback Function to be passed (index, value) of each bit.
+	 * @returns {Boolean} true if enumeration completed, false if terminated early
+	 */
 	enumBits: function(callback) {
 		var num;
 		for (num = this._base; num < this._base + this._size; num++) {
-			if (!callback(num)) {
+			if (!callback(num, this.isSet(num))) {
 				return false;
 			}
 		}
 		return true;
 	},
-	toString: function(base) {
+	/**
+	 * Generate a string listing numeric indices of set bits in this bitset.
+	 * @returns {String} A string describing this bitset.
+	 */
+	toString: function() {
 		var ret = '';
 		this.enumSet(function(num) {
 			if (ret) {
@@ -225,11 +307,16 @@ $.extend(BitSet.prototype, {
 		});
 		return '{' + ret + '}';
 	},
+	/**
+	 * Generate a string containing either a '0' for clear or '1' for set bits in this bitset.
+	 * @returns {String} A string containing solely '0's and '1's.
+	 */
 	toBinaryString: function() {
 		var ret = '';
 		this.enumBits(function(num, val) {
 			ret += '' + (val ? '1' : '0');
 			return true;
 		});
+		return ret;
 	}
 });

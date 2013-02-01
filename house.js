@@ -68,7 +68,7 @@ $.extend(Sudoku.House.prototype, {
 	isRow: function() {
 		return this.rowStart === this.rowEnd;
 	},
-	isCol: function() {
+	isColumn: function() {
 		return this.colStart === this.colEnd;
 	},
 	isBox: function() {
@@ -78,7 +78,7 @@ $.extend(Sudoku.House.prototype, {
 		if (this.isRow()) {
 			return "Row(" + Sudoku.rowToString(this.rowStart) + ")";
 		}
-		if (this.isCol()) {
+		if (this.isColumn()) {
 			return "Col(" + Sudoku.colToString(this.colStart) + ")";
 		}
 		if (this.isBox()) {
