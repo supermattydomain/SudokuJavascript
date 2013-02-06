@@ -29,7 +29,7 @@ $.extend(Sudoku, {
 		return '' + (colNum + 1);
 	},
 	givenCharacters: "123456789",
-	nonGivenCharacters: " .0",
+	nonGivenCharacters: " .0*_",
 	puzzles: [
       	{
       		name: "Please select..."
@@ -105,6 +105,24 @@ $.extend(Sudoku, {
 ..4|...|.3.\
 ...|..9|7..\
 "
+      	},
+      	{
+      		name: "Platinum Blonde",
+      		author: "coloin",
+      		date: "",
+      		puzzleText: "\
+...|...|.12\
+...|...|..3\
+..2|3..|4..\
+---+---+---\
+..1|8..|..5\
+.6.|.7.|8..\
+...|..9|...\
+---+---+---\
+..8|5..|...\
+9..|.4.|5..\
+47.|..6|...\
+"
       	}
     ]
 });
@@ -113,9 +131,20 @@ $(function() {
 	(function($) {
 		testBitSet();
 		var stringEdit = $('#numberString'),
-			board = new Sudoku.Board($('.sudokuBoard')),
 			puzzleSelect = $('#puzzleSelect'),
-			puzzleInfo = $('#puzzleInfo');
+			puzzleInfo = $('#puzzleInfo'),
+			reasoning = $('#reasoning'),
+			board = new Sudoku.Board($('.sudokuBoard'), function(cell, eliminated, number, reason) {
+				var t = reasoning.text();
+				reasoning.text(
+					t + (t ? "\n" : "")
+					+ cell + " "
+					+ (eliminated ? "cannot" : "must")
+					+ " be a"
+					+ ((8 == number) ? "n" : "") + " "
+					+ number + " because " + reason
+				);
+			});
 		// When the set-number-string button is clicked, update the board and game selector and info.
 		$('#setNumberStringButton').on("click", function() {
 			puzzleSelect.val(0);
@@ -132,6 +161,7 @@ $(function() {
 			puzzleInfo.text('');
 			board.reset();
 			stringEdit.val(board.getNumberString(false));
+			reasoning.text('');
 		});
 		// Populate puzzle selector from included set of puzzles
 		$(Sudoku.puzzles).each(function(index, puzzle) {
@@ -147,13 +177,15 @@ $(function() {
 					return !!val;
 				}).join(", "));
 				stringEdit.val(board.getNumberString(false));
+				reasoning.text('');
 				board.setNumberString(puzzle.puzzleText);
 			});
 		});
 		// Enable tooltips on Cells
 		$(document).tooltip({items: '.sudokuCell', track: false});
 		// TODO: For debugging
-		puzzleSelect.val(4).change();
-		board.solve();
+		// puzzleSelect.val(4).change();
+		// board.solve();
 	})(jQuery);
 });
+// TODO: $.noConflict();

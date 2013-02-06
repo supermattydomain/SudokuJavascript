@@ -46,13 +46,22 @@ $.extend(BitSet.prototype, {
 		return this._base;
 	},
 	/**
-	 * Is the givn BitSet equal to this BitSet?
+	 * Is the given BitSet equal to this BitSet?
 	 * This tests equality, not identity.
 	 * @param otherBitSet The BitSet to be compared to this BitSet
 	 * @returns {Boolean} true if the BitSets are equal, false if they differ
 	 */
 	equals: function(otherBitSet) {
-		return this._base === otherBitSet._base && this._count === otherBitSet._count && this.bits === otherBitSet.bits;
+		// The apparently-unnecessary parentheses below are in fact necessary
+		// in order to prevent Automatic Semicolon Insertion from turning this code
+		// into a 'return;' followed by an unreachable evaluation of an expression
+		// whose value would then be discarded.
+		return (
+			this._base === otherBitSet._base
+			&& this._size === otherBitSet._size
+			&& this.card === otherBitSet.card
+			&& this.bits === otherBitSet.bits
+		);
 	},
 	/**
 	 * How many bits are set in this BitSet?
@@ -168,8 +177,10 @@ $.extend(BitSet.prototype, {
 		if (this._base !== bs._base) {
 			throw "Bitset bases differ: " + this._base + " and " + bs._base;
 		}
-		this.bits &= bs.bits;
-		this.card = this._cardinality();
+		if (this.isAnySet()) {
+			this.bits &= bs.bits;
+			this.card = this._cardinality();
+		}
 		return this;
 	},
 	/**
@@ -184,8 +195,10 @@ $.extend(BitSet.prototype, {
 		if (this._base !== bs._base) {
 			throw "Bitset bases differ: " + this._base + " and " + bs._base;
 		}
-		this.bits |= bs.bits;
-		this.card = this._cardinality();
+		if (this.isAnyClear()) {
+			this.bits |= bs.bits;
+			this.card = this._cardinality();
+		}
 		return this;
 	},
 	/**
@@ -252,10 +265,12 @@ $.extend(BitSet.prototype, {
 	 */
 	enumSet: function(callback) {
 		var num;
-		for (num = this._base; num < this._base + this._size; num++) {
-			if (this.isSet(num)) {
-				if (!callback(num)) {
-					return false;
+		if (this.isAnySet()) {
+			for (num = this._base; num < this._base + this._size; num++) {
+				if (this.isSet(num)) {
+					if (!callback(num)) {
+						return false;
+					}
 				}
 			}
 		}
@@ -269,10 +284,12 @@ $.extend(BitSet.prototype, {
 	 */
 	enumClear: function(callback) {
 		var num;
-		for (num = this._base; num < this._base + this._size; num++) {
-			if (this.isClear(num)) {
-				if (!callback(num)) {
-					return false;
+		if (this.isAnyClear()) {
+			for (num = this._base; num < this._base + this._size; num++) {
+				if (this.isClear(num)) {
+					if (!callback(num)) {
+						return false;
+					}
 				}
 			}
 		}

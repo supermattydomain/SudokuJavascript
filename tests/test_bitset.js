@@ -14,7 +14,7 @@ function assertBitSetEquals(bs, arr) {
 	} catch (err) {
 		console.log(bs);
 		console.log(arr);
-		throw arguments.caller + ": " + err;
+		throw arguments.callee.caller + ": " + err;
 	}
 }
 
@@ -68,6 +68,25 @@ function _assertBitSetEquals(bs, arr) {
 	arrStr = '{' + arr.join(", ") + '}';
 	if (bs.toString() !== arrStr) {
 		throw "Bitset stringifies to '" + bs + "', but array stringifies to '" + arrStr + "'";
+	}
+}
+
+function testBitSetEquality() {
+	var bs1 = new BitSet(10, 1), bs2 = new BitSet(10, 2);
+	if (bs1.equals(bs2)) {
+		throw "BitSets with differing bases are wrongly equal";
+	}
+	bs1 = new BitSet(10, 1), bs2 = new BitSet(8, 1);
+	if (bs1.equals(bs2)) {
+		throw "BitSets with differing sizes are wrongly equal";
+	}
+	bs1 = new BitSet(10, 1), bs2 = new BitSet(10, 1);
+	bs1.set(4), bs2.set(4);
+	bs1.set(6), bs2.set(6);
+	if (!bs1.equals(bs2)) {
+		console.log(bs1);
+		console.log(bs2);
+		throw "Identical BitSets are wrongly not equal";
 	}
 }
 
@@ -146,6 +165,7 @@ function testBitSetOr() {
 }
 
 function testBitSet() {
+	testBitSetEquality();
 	testBitSetOneSet();
 	testBitSetAllSetButOne();
 	testBitSetAllClearButOne();

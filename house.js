@@ -50,12 +50,52 @@ $.extend(Sudoku.House.prototype, {
 	isNumberKnown: function(num) {
 		return this.knownNumbers.isSet(num);
 	},
+	/**
+	 * Remember that the location of the given number in this House is now known.
+	 * @param num The number whose location in this House is now known
+	 * @returns this
+	 */
 	setNumberKnown: function(num) {
 		this.knownNumbers.set(num);
 		return this;
 	},
+	/**
+	 * Enumerate numbers whose positions in this House are unknown,
+	 * passing each to the given callback function.
+	 * @param callback Function to be called with unknown number
+	 * @returns true if enumeration completed, false if terminated prematurely
+	 */
 	enumUnknownNumbers: function(callback) {
 		return this.knownNumbers.enumClear(callback);
+	},
+	/**
+	 * Enumerate Cells in this House that could contain the given number,
+	 * passing each to the given callback function.
+	 * @param callback Function to be called with candidate Cell
+	 * @returns true if enumeration completed, false if terminated prematurely
+	 */
+	enumPlacesForNumber: function(num, callback) {
+		return this.enumCells(function(cell) {
+			if (cell.isNumberPossible(num)) {
+				if (!callback(cell)) {
+					return false; // Terminate enumeration
+				}
+			}
+			return true; // Next Cell
+		});
+	},
+	/**
+	 * Return an array of all Cells in this House that could contain the given number.
+	 * @param num The number whose candidate Cells are to be returned
+	 * @returns {Array} All Cells in this House that could contain the given number
+	 */
+	placesForNumber: function(num) {
+		var places = [];
+		this.enumPlacesForNumber(num, function(cell) {
+			places.push(cell);
+			return true; // Next Cell
+		});
+		return places;
 	},
 	getNumberString: function() {
 		var ret = '';
